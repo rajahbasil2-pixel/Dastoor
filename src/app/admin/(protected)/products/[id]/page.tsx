@@ -1,10 +1,11 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import { useRouter } from "next/navigation";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
 
-export default function EditProductPage({ params }: { params: { id: string } }) {
+export default function EditProductPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
@@ -19,7 +20,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories);
-    fetch(`/api/products/${params.id}`).then(r => r.json()).then((p) => {
+    fetch(`/api/products/${id}`).then(r => r.json()).then((p) => {
       setForm({
         name: p.name, description: p.description, price: p.price.toString(),
         salePrice: p.salePrice?.toString() || "", categoryId: p.categoryId,
@@ -27,7 +28,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
       });
       setImages(p.images || []);
     });
-  }, [params.id]);
+  }, [id]);
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
     const target = e.target as HTMLInputElement;
@@ -74,7 +75,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
 
   async function handleSubmit() {
     setLoading(true);
-    const res = await fetch(`/api/products/${params.id}`, {
+    const res = await fetch(`/api/products/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, images }),
@@ -91,7 +92,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   async function handleDelete() {
     if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeleting(true);
-    await fetch(`/api/products/${params.id}`, { method: "DELETE" });
+    await fetch(`/api/products/${id}`, { method: "DELETE" });
     router.push("/admin/products");
   }
 
@@ -148,8 +149,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">
             Images {uploading && <span className="text-[#C8A96E] ml-2">Uploading...</span>}
           </label>
-
-          {/* Current images */}
           {images.length > 0 && (
             <div className="flex gap-2 mb-3 flex-wrap">
               {images.map((img, i) => (
@@ -163,7 +162,6 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               ))}
             </div>
           )}
-
           <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="text-xs text-[#737373]" />
           {uploadError && <p className="text-xs text-[#EF4444] mt-2">{uploadError}</p>}
           <p className="text-xs text-[#737373] mt-2">{images.length} image(s) saved</p>
