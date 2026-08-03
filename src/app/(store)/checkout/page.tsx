@@ -4,17 +4,27 @@ import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils";
 
-const CITIES = ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta", "Sialkot", "Gujranwala", "Hyderabad", "Other"];
+const CITIES = [
+  "Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad",
+  "Multan", "Peshawar", "Quetta", "Sialkot", "Gujranwala",
+  "Hyderabad", "Bahawalpur", "Sargodha", "Sukkur", "Larkana",
+  "Sheikhupura", "Rahim Yar Khan", "Jhang", "Dera Ghazi Khan",
+  "Gujrat", "Sahiwal", "Wah Cantonment", "Mardan", "Kasur",
+  "Dera Ismail Khan", "Nawabshah", "Mingora", "Chiniot", "Mirpur Khas",
+  "Abbottabad", "Jacobabad", "Muzaffarabad", "Gilgit", "Turbat", "Other"
+];
 
 export default function CheckoutPage() {
   const { items, totalPrice, clearCart } = useCartStore();
   const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [success, setSuccess] = useState<string | null>(null);
-  const [form, setForm] = useState({ fullName: "", phone: "", city: "", address: "", notes: "" });
+  const [form, setForm] = useState({
+    fullName: "", phone: "", city: "", customCity: "", address: "", notes: ""
+  });
 
   const subtotal = totalPrice();
-  const shipping = subtotal >= 3000 ? 0 : 200;
+  const shipping = subtotal >= 4000 ? 0 : 200;
   const total = subtotal + shipping;
 
   function handleChange(e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) {
@@ -22,7 +32,8 @@ export default function CheckoutPage() {
   }
 
   async function handleSubmit() {
-    if (!form.fullName || !form.phone || !form.city || !form.address) {
+    const cityValue = form.city === "Other" ? form.customCity : form.city;
+    if (!form.fullName || !form.phone || !cityValue || !form.address) {
       alert("Please fill all required fields.");
       return;
     }
@@ -31,7 +42,11 @@ export default function CheckoutPage() {
       const res = await fetch("/api/orders", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ ...form, items, subtotal, shipping, total }),
+        body: JSON.stringify({
+          ...form,
+          city: cityValue,
+          items, subtotal, shipping, total
+        }),
       });
       const data = await res.json();
       if (res.ok) {
@@ -75,30 +90,49 @@ export default function CheckoutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
         <div className="space-y-6">
           <p className="text-xs uppercase tracking-widest text-[#737373]">Delivery Information</p>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Full Name *</label>
-            <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Muhammad Ali" className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]" />
+            <input name="fullName" value={form.fullName} onChange={handleChange} placeholder="Muhammad Ali"
+              className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]" />
           </div>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Phone Number *</label>
-            <input name="phone" value={form.phone} onChange={handleChange} placeholder="0300 1234567" className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]" />
+            <input name="phone" value={form.phone} onChange={handleChange} placeholder="0300 1234567"
+              className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]" />
           </div>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">City *</label>
-            <select name="city" value={form.city} onChange={handleChange} className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]">
+            <select name="city" value={form.city} onChange={handleChange}
+              className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]">
               <option value="">Select city</option>
               {CITIES.map(c => <option key={c} value={c}>{c}</option>)}
             </select>
+            {form.city === "Other" && (
+              <input name="customCity" value={form.customCity} onChange={handleChange}
+                placeholder="Type your city name"
+                className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A] mt-2" />
+            )}
           </div>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Delivery Address *</label>
-            <textarea name="address" value={form.address} onChange={handleChange} rows={3} placeholder="House/Flat #, Street, Area" className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A] resize-none" />
+            <textarea name="address" value={form.address} onChange={handleChange} rows={3}
+              placeholder="House/Flat #, Street, Area"
+              className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A] resize-none" />
           </div>
+
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Order Notes (Optional)</label>
-            <textarea name="notes" value={form.notes} onChange={handleChange} rows={2} placeholder="Any special instructions..." className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A] resize-none" />
+            <textarea name="notes" value={form.notes} onChange={handleChange} rows={2}
+              placeholder="Any special instructions..."
+              className="w-full border border-[#D4D4D4] px-4 py-3 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A] resize-none" />
           </div>
-          <button onClick={handleSubmit} disabled={loading} className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
+
+          <button onClick={handleSubmit} disabled={loading}
+            className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
             {loading ? "Placing Order..." : "Place Order — Cash on Delivery"}
           </button>
         </div>
@@ -109,12 +143,9 @@ export default function CheckoutPage() {
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}`} className="flex gap-3">
                 <div className="w-14 h-16 bg-[#F5F5F5] flex-shrink-0 overflow-hidden">
-                  <img
-                    src={item.image || "/placeholder.jpg"}
-                    alt={item.name}
+                  <img src={item.image || "/placeholder.jpg"} alt={item.name}
                     className="w-full h-full object-cover"
-                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
-                  />
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }} />
                 </div>
                 <div>
                   <p className="text-xs font-medium text-[#0A0A0A]">{item.name}</p>
@@ -125,9 +156,19 @@ export default function CheckoutPage() {
             ))}
           </div>
           <div className="border-t border-[#D4D4D4] pt-4 space-y-2">
-            <div className="flex justify-between text-xs text-[#737373]"><span>Subtotal</span><span>{formatPrice(subtotal)}</span></div>
-            <div className="flex justify-between text-xs text-[#737373]"><span>Shipping</span><span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span></div>
-            <div className="flex justify-between text-sm font-bold pt-2 border-t border-[#D4D4D4]"><span>Total</span><span>{formatPrice(total)}</span></div>
+            <div className="flex justify-between text-xs text-[#737373]">
+              <span>Subtotal</span><span>{formatPrice(subtotal)}</span>
+            </div>
+            <div className="flex justify-between text-xs text-[#737373]">
+              <span>Shipping</span>
+              <span>{shipping === 0 ? "Free" : formatPrice(shipping)}</span>
+            </div>
+            {subtotal < 4000 && (
+              <p className="text-[10px] text-[#C8A96E]">Add Rs. {(4000 - subtotal).toLocaleString("en-PK")} more for free delivery</p>
+            )}
+            <div className="flex justify-between text-sm font-bold pt-2 border-t border-[#D4D4D4]">
+              <span>Total</span><span>{formatPrice(total)}</span>
+            </div>
           </div>
         </div>
       </div>

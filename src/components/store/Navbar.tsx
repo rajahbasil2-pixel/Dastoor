@@ -17,13 +17,17 @@ const NAV_LINKS = [
 export default function Navbar() {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [mounted, setMounted] = useState(false);
   const { totalItems, openCart } = useCartStore();
 
   useEffect(() => {
+    setMounted(true);
     const handler = () => setScrolled(window.scrollY > 20);
     window.addEventListener("scroll", handler);
     return () => window.removeEventListener("scroll", handler);
   }, []);
+
+  const itemCount = mounted ? totalItems() : 0;
 
   return (
     <>
@@ -34,29 +38,41 @@ export default function Navbar() {
               {mobileOpen ? <X size={22} /> : <Menu size={22} />}
             </button>
 
-            {/* Logo - black version on white background */}
             <Link href="/" className="absolute left-1/2 -translate-x-1/2 lg:static lg:translate-x-0">
-              <img src="/logo2.png" alt="Dastoor" className="h-10 w-auto object-contain"
-                onError={(e) => { (e.target as HTMLImageElement).src = "/logo.png"; }} />
+              <img
+                src="/logo2.png"
+                alt="Dastoor"
+                className="h-14 w-auto object-contain"
+                onError={(e) => { (e.target as HTMLImageElement).src = "/logo.png"; }}
+              />
             </Link>
 
             <div className="hidden lg:flex items-center gap-8">
               {NAV_LINKS.map((link) => (
-                <Link key={link.href} href={link.href}
-                  className="text-xs uppercase tracking-widest text-[#404040] hover:text-[#0A0A0A] transition-colors duration-200 hover:underline decoration-[#C8A96E] underline-offset-4">
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  className="text-xs uppercase tracking-widest text-[#404040] hover:text-[#0A0A0A] transition-colors duration-200 hover:underline decoration-[#C8A96E] underline-offset-4"
+                >
                   {link.label}
                 </Link>
               ))}
             </div>
 
             <div className="flex items-center gap-4">
-              <button className="p-1 text-[#404040] hover:text-[#0A0A0A] relative" onClick={openCart} aria-label="Cart">
+              <button
+                className="p-1 text-[#404040] hover:text-[#0A0A0A] relative"
+                onClick={openCart}
+                aria-label="Cart"
+              >
                 <ShoppingBag size={20} />
-                {totalItems() > 0 && (
-                  <span className="absolute -top-1 -right-1 bg-[#0A0A0A] text-[#FAFAFA] text-[9px] font-bold w-4 h-4 flex items-center justify-center">
-                    {totalItems()}
-                  </span>
-                )}
+                <span
+                  suppressHydrationWarning
+                  className="absolute -top-1 -right-1 bg-[#0A0A0A] text-[#FAFAFA] text-[9px] font-bold w-4 h-4 flex items-center justify-center"
+                  style={{ display: itemCount > 0 ? "flex" : "none" }}
+                >
+                  {itemCount}
+                </span>
               </button>
             </div>
           </div>
@@ -66,8 +82,12 @@ export default function Navbar() {
           <div className="lg:hidden border-t border-[#D4D4D4] bg-[#FAFAFA]">
             <div className="px-4 py-4 flex flex-col gap-1">
               {NAV_LINKS.map((link) => (
-                <Link key={link.href} href={link.href} onClick={() => setMobileOpen(false)}
-                  className="text-xs uppercase tracking-widest py-3 border-b border-[#F5F5F5] text-[#404040] hover:text-[#0A0A0A]">
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setMobileOpen(false)}
+                  className="text-xs uppercase tracking-widest py-3 border-b border-[#F5F5F5] text-[#404040] hover:text-[#0A0A0A]"
+                >
                   {link.label}
                 </Link>
               ))}

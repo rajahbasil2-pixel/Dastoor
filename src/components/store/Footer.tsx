@@ -8,7 +8,6 @@ export default function Footer() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">
-            {/* White logo on black background */}
             <img src="/logo.png" alt="Dastoor" className="h-9 w-auto object-contain brightness-0 invert mb-4" />
             <p className="text-xs text-[#737373] leading-relaxed max-w-[200px]">
               Premium gents wear. Shirts, pants, belts & more. Delivered across Pakistan.
@@ -51,7 +50,7 @@ export default function Footer() {
             <ul className="space-y-3 text-xs text-[#D4D4D4]">
               <li>3–5 working days</li>
               <li>Rs. 200 standard</li>
-              <li>Free above Rs. 3,000</li>
+              <li>Free above Rs. 4,000</li>
             </ul>
           </div>
         </div>
