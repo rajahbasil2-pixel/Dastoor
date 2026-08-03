@@ -15,9 +15,6 @@ key 628482474375765
 secret c1q-H1Z88jwnP8gWutMJK3Zjgvk
 
 
-github personal token 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
-
-
 
 
 
