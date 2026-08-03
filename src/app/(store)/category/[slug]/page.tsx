@@ -2,8 +2,10 @@ import { prisma } from "@/lib/prisma";
 import ProductCard from "@/components/store/ProductCard";
 import { notFound } from "next/navigation";
 
-export default async function CategoryPage({ params }: { params: { slug: string } }) {
-  const category = await prisma.category.findUnique({ where: { slug: params.slug } });
+export default async function CategoryPage({ params }: { params: Promise<{ slug: string }> }) {
+  const { slug } = await params;
+  
+  const category = await prisma.category.findUnique({ where: { slug } });
   if (!category) notFound();
 
   const products = await prisma.product.findMany({
