@@ -1,6 +1,5 @@
 "use client";
 import Link from "next/link";
-import Image from "next/image";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils";
 import { Trash2, Plus, Minus } from "lucide-react";
@@ -27,8 +26,13 @@ export default function CartPage() {
           <div className="lg:col-span-2 space-y-6">
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}`} className="flex gap-4 pb-6 border-b border-[#D4D4D4]">
-                <div className="relative w-24 h-28 bg-[#F5F5F5] flex-shrink-0">
-                  {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="96px" />}
+                <div className="w-24 h-28 bg-[#F5F5F5] flex-shrink-0 overflow-hidden">
+                  <img
+                    src={item.image || "/placeholder.jpg"}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
+                  />
                 </div>
                 <div className="flex-1">
                   <Link href={`/product/${item.slug}`} className="text-sm font-medium hover:text-[#C8A96E] transition-colors">{item.name}</Link>

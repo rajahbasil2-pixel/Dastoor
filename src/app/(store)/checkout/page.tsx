@@ -3,7 +3,6 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { useCartStore } from "@/store/cartStore";
 import { formatPrice } from "@/lib/utils";
-import Image from "next/image";
 
 const CITIES = ["Karachi", "Lahore", "Islamabad", "Rawalpindi", "Faisalabad", "Multan", "Peshawar", "Quetta", "Sialkot", "Gujranwala", "Hyderabad", "Other"];
 
@@ -23,7 +22,10 @@ export default function CheckoutPage() {
   }
 
   async function handleSubmit() {
-    if (!form.fullName || !form.phone || !form.city || !form.address) return;
+    if (!form.fullName || !form.phone || !form.city || !form.address) {
+      alert("Please fill all required fields.");
+      return;
+    }
     setLoading(true);
     try {
       const res = await fetch("/api/orders", {
@@ -50,7 +52,7 @@ export default function CheckoutPage() {
         </div>
         <h1 className="font-playfair text-2xl font-bold mb-2">Order Placed!</h1>
         <p className="text-xs text-[#737373] mb-6">Order number: <span className="font-mono font-medium text-[#0A0A0A]">{success}</span></p>
-        <p className="text-sm text-[#737373] mb-8">We'll contact you shortly to confirm your order. Thank you for shopping with Dastoor!</p>
+        <p className="text-sm text-[#737373] mb-8">We will contact you shortly to confirm your order. Thank you for shopping with Dastoor!</p>
         <button onClick={() => router.push("/")} className="bg-[#0A0A0A] text-[#FAFAFA] px-8 py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors">
           Continue Shopping
         </button>
@@ -106,10 +108,15 @@ export default function CheckoutPage() {
           <div className="space-y-4 mb-6">
             {items.map((item) => (
               <div key={`${item.productId}-${item.size}`} className="flex gap-3">
-                <div className="relative w-14 h-16 bg-[#F5F5F5] flex-shrink-0">
-                  {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="56px" />}
+                <div className="w-14 h-16 bg-[#F5F5F5] flex-shrink-0 overflow-hidden">
+                  <img
+                    src={item.image || "/placeholder.jpg"}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
+                  />
                 </div>
-                <div className="flex-1">
+                <div>
                   <p className="text-xs font-medium text-[#0A0A0A]">{item.name}</p>
                   <p className="text-[10px] text-[#737373]">Size: {item.size} · Qty: {item.quantity}</p>
                   <p className="text-xs font-medium text-[#C8A96E] mt-0.5">{formatPrice((item.salePrice ?? item.price) * item.quantity)}</p>

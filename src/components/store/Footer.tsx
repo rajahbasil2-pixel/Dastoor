@@ -1,24 +1,20 @@
 import Link from "next/link";
-import Image from "next/image";
-
-const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "923001234567";
 
 export default function Footer() {
+  const whatsapp = process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || "923295618053";
+
   return (
     <footer className="bg-[#0A0A0A] text-[#FAFAFA] mt-16">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
         <div className="grid grid-cols-2 md:grid-cols-4 gap-10">
           <div className="col-span-2 md:col-span-1">
-            <Image src="/logo.png" alt="Dastoor" width={100} height={36} className="h-9 w-auto object-contain brightness-0 invert mb-4" />
+            {/* White logo on black background */}
+            <img src="/logo.png" alt="Dastoor" className="h-9 w-auto object-contain brightness-0 invert mb-4" />
             <p className="text-xs text-[#737373] leading-relaxed max-w-[200px]">
               Premium gents wear. Shirts, pants, belts & more. Delivered across Pakistan.
             </p>
-            <a
-              href={`https://wa.me/${whatsapp}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 mt-6 text-[#25D366] text-xs uppercase tracking-widest hover:text-[#FAFAFA] transition-colors"
-            >
+            <a href={`https://wa.me/${whatsapp}`} target="_blank" rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 mt-6 text-[#25D366] text-xs uppercase tracking-widest hover:text-[#FAFAFA] transition-colors">
               WhatsApp Us
             </a>
           </div>
@@ -63,9 +59,7 @@ export default function Footer() {
 
       <div className="border-t border-[#404040] px-4 sm:px-6 lg:px-8">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row items-center justify-between py-6 gap-3">
-          <p className="text-[10px] text-[#737373] uppercase tracking-widest">
-            © {new Date().getFullYear()} Dastoor. All rights reserved.
-          </p>
+          <p className="text-[10px] text-[#737373] uppercase tracking-widest">© {new Date().getFullYear()} Dastoor. All rights reserved.</p>
           <p className="text-[10px] text-[#737373]">Pakistan 🇵🇰</p>
         </div>
       </div>

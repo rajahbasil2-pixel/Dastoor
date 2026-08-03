@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
 
@@ -9,7 +8,9 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [deleting, setDeleting] = useState(false);
+  const [uploadError, setUploadError] = useState("");
   const [images, setImages] = useState<string[]>([]);
   const [form, setForm] = useState({
     name: "", description: "", price: "", salePrice: "",
@@ -40,32 +41,55 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
+    setUploading(true);
+    setUploadError("");
+
     for (const file of Array.from(files)) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        try {
-          const res = await fetch("/api/upload", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ image: base64 }) });
-          const data = await res.json();
-          if (data.url) setImages(prev => [...prev, data.url]);
-        } catch { setImages(prev => [...prev, base64]); }
-      };
-      reader.readAsDataURL(file);
+      await new Promise<void>((resolve) => {
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          try {
+            const res = await fetch("/api/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: base64 }),
+            });
+            const data = await res.json();
+            if (data.url) {
+              setImages(prev => [...prev, data.url]);
+            } else {
+              setUploadError("Upload failed: " + (data.error || "Unknown error"));
+            }
+          } catch {
+            setUploadError("Upload failed. Check Cloudinary settings.");
+          }
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    setUploading(false);
   }
 
   async function handleSubmit() {
     setLoading(true);
-    await fetch(`/api/products/${params.id}`, {
+    const res = await fetch(`/api/products/${params.id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, images }),
     });
-    router.push("/admin/products");
+    if (res.ok) {
+      router.push("/admin/products");
+    } else {
+      const data = await res.json();
+      alert("Error: " + data.error);
+    }
+    setLoading(false);
   }
 
   async function handleDelete() {
-    if (!confirm("Delete this product?")) return;
+    if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeleting(true);
     await fetch(`/api/products/${params.id}`, { method: "DELETE" });
     router.push("/admin/products");
@@ -78,7 +102,7 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
           <button onClick={() => router.back()} className="text-xs uppercase tracking-widest text-[#737373] hover:text-[#0A0A0A]">← Back</button>
           <h1 className="text-2xl font-bold">Edit Product</h1>
         </div>
-        <button onClick={handleDelete} disabled={deleting} className="text-xs uppercase tracking-widest text-[#EF4444] hover:underline">
+        <button onClick={handleDelete} disabled={deleting} className="text-xs uppercase tracking-widest text-[#EF4444] hover:underline disabled:opacity-50">
           {deleting ? "Deleting..." : "Delete Product"}
         </button>
       </div>
@@ -119,14 +143,18 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             ))}
           </div>
         </div>
+
         <div>
-          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Add More Images</label>
-          <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="text-xs text-[#737373]" />
+          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">
+            Images {uploading && <span className="text-[#C8A96E] ml-2">Uploading...</span>}
+          </label>
+
+          {/* Current images */}
           {images.length > 0 && (
-            <div className="flex gap-2 mt-3 flex-wrap">
+            <div className="flex gap-2 mb-3 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative w-20 h-24 bg-[#F5F5F5] group">
-                  <Image src={img} alt={`Image ${i+1}`} fill className="object-cover" sizes="80px" />
+                  <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
                   <button onClick={() => setImages(images.filter((_, j) => j !== i))}
                     className="absolute top-1 right-1 bg-[#EF4444] text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
@@ -135,7 +163,12 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
               ))}
             </div>
           )}
+
+          <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="text-xs text-[#737373]" />
+          {uploadError && <p className="text-xs text-[#EF4444] mt-2">{uploadError}</p>}
+          <p className="text-xs text-[#737373] mt-2">{images.length} image(s) saved</p>
         </div>
+
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} className="w-4 h-4" />
@@ -146,9 +179,10 @@ export default function EditProductPage({ params }: { params: { id: string } }) 
             <span className="text-xs uppercase tracking-widest text-[#737373]">In Stock</span>
           </label>
         </div>
-        <button onClick={handleSubmit} disabled={loading}
+
+        <button onClick={handleSubmit} disabled={loading || uploading}
           className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
-          {loading ? "Saving..." : "Save Changes"}
+          {loading ? "Saving..." : uploading ? "Wait for upload..." : "Save Changes"}
         </button>
       </div>
     </div>

@@ -1,7 +1,6 @@
 "use client";
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Image from "next/image";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
 
@@ -9,7 +8,9 @@ export default function NewProductPage() {
   const router = useRouter();
   const [categories, setCategories] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const [uploadError, setUploadError] = useState("");
   const [form, setForm] = useState({
     name: "", description: "", price: "", salePrice: "",
     categoryId: "", sizes: [] as string[],
@@ -32,33 +33,54 @@ export default function NewProductPage() {
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
+    setUploading(true);
+    setUploadError("");
+
     for (const file of Array.from(files)) {
       const reader = new FileReader();
-      reader.onloadend = async () => {
-        const base64 = reader.result as string;
-        try {
-          const res = await fetch("/api/upload", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ image: base64 }),
-          });
-          const data = await res.json();
-          if (data.url) setImages(prev => [...prev, data.url]);
-        } catch { setImages(prev => [...prev, base64]); }
-      };
-      reader.readAsDataURL(file);
+      await new Promise<void>((resolve) => {
+        reader.onloadend = async () => {
+          const base64 = reader.result as string;
+          try {
+            const res = await fetch("/api/upload", {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ image: base64 }),
+            });
+            const data = await res.json();
+            if (data.url) {
+              setImages(prev => [...prev, data.url]);
+            } else {
+              setUploadError("Upload failed: " + (data.error || "Unknown error"));
+            }
+          } catch (err) {
+            setUploadError("Upload failed. Check Cloudinary settings.");
+          }
+          resolve();
+        };
+        reader.readAsDataURL(file);
+      });
     }
+    setUploading(false);
   }
 
   async function handleSubmit() {
-    if (!form.name || !form.categoryId || !form.price) return;
+    if (!form.name || !form.categoryId || !form.price) {
+      alert("Please fill in Name, Category and Price");
+      return;
+    }
     setLoading(true);
     const res = await fetch("/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ ...form, images }),
     });
-    if (res.ok) router.push("/admin/products");
+    if (res.ok) {
+      router.push("/admin/products");
+    } else {
+      const data = await res.json();
+      alert("Error: " + data.error);
+    }
     setLoading(false);
   }
 
@@ -76,7 +98,7 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Description *</label>
+          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Description</label>
           <textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Product description..." className="w-full border border-[#D4D4D4] px-4 py-3 text-sm outline-none focus:border-[#0A0A0A] resize-none" />
         </div>
 
@@ -112,13 +134,16 @@ export default function NewProductPage() {
         </div>
 
         <div>
-          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Product Images</label>
-          <input type="file" accept="image/*" multiple onChange={handleImageUpload} className="text-xs text-[#737373]" />
+          <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">
+            Product Images {uploading && <span className="text-[#C8A96E] ml-2">Uploading...</span>}
+          </label>
+          <input type="file" accept="image/*" multiple onChange={handleImageUpload} disabled={uploading} className="text-xs text-[#737373]" />
+          {uploadError && <p className="text-xs text-[#EF4444] mt-2">{uploadError}</p>}
           {images.length > 0 && (
             <div className="flex gap-2 mt-3 flex-wrap">
               {images.map((img, i) => (
                 <div key={i} className="relative w-20 h-24 bg-[#F5F5F5] group">
-                  <Image src={img} alt={`Image ${i+1}`} fill className="object-cover" sizes="80px" />
+                  <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
                   <button onClick={() => setImages(images.filter((_, j) => j !== i))}
                     className="absolute top-1 right-1 bg-[#EF4444] text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
@@ -127,6 +152,7 @@ export default function NewProductPage() {
               ))}
             </div>
           )}
+          <p className="text-xs text-[#737373] mt-2">{images.length} image(s) uploaded to Cloudinary</p>
         </div>
 
         <div className="flex items-center gap-6">
@@ -140,9 +166,9 @@ export default function NewProductPage() {
           </label>
         </div>
 
-        <button onClick={handleSubmit} disabled={loading}
+        <button onClick={handleSubmit} disabled={loading || uploading}
           className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
-          {loading ? "Saving..." : "Add Product"}
+          {loading ? "Saving..." : uploading ? "Wait for upload to finish..." : "Add Product"}
         </button>
       </div>
     </div>

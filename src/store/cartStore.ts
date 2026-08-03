@@ -67,6 +67,9 @@ export const useCartStore = create<CartStore>()(
           0
         ),
     }),
-    { name: "dastoor-cart" }
+    { 
+      name: "dastoor-cart-v2",
+      version: 2,
+    }
   )
 );

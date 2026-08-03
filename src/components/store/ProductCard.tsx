@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import { formatPrice } from "@/lib/utils";
@@ -14,15 +13,18 @@ export default function ProductCard({ product }: ProductCardProps) {
   const displayPrice = product.salePrice ?? product.price;
   const isOnSale = product.salePrice !== null && product.salePrice !== undefined;
   const { addItem } = useCartStore();
+  const img1 = product.images?.[0] || "/placeholder.jpg";
+  const img2 = product.images?.[1] || null;
 
   function handleQuickAdd(e: React.MouseEvent) {
     e.preventDefault();
+    e.stopPropagation();
     const firstInStockSize = product.sizes.find((s) => s.inStock);
     if (!firstInStockSize) return;
     addItem({
       productId: product.id,
       name: product.name,
-      image: product.images[0] || "",
+      image: img1,
       price: product.price,
       salePrice: product.salePrice ?? undefined,
       size: firstInStockSize.size,
@@ -34,34 +36,36 @@ export default function ProductCard({ product }: ProductCardProps) {
   return (
     <Link href={`/product/${product.slug}`} className="group block">
       <div className="relative aspect-[3/4] overflow-hidden bg-[#F5F5F5]">
-        {product.images[0] && (
-          <Image
-            src={product.images[0]}
+        {/* Primary image */}
+        <img
+          src={img1}
+          alt={product.name}
+          className="absolute inset-0 w-full h-full object-cover transition-opacity duration-400 group-hover:opacity-0"
+          onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
+        />
+
+        {/* Hover image */}
+        {img2 && (
+          <img
+            src={img2}
             alt={product.name}
-            fill
-            className="object-cover product-image-primary"
-            sizes="(max-width: 768px) 50vw, 25vw"
+            className="absolute inset-0 w-full h-full object-cover opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+            onError={(e) => { (e.target as HTMLImageElement).style.display = "none"; }}
           />
         )}
-        {product.images[1] && (
-          <Image
-            src={product.images[1]}
-            alt={product.name}
-            fill
-            className="object-cover product-image-secondary"
-            sizes="(max-width: 768px) 50vw, 25vw"
-          />
-        )}
+
         {isOnSale && (
           <div className="absolute top-3 left-3 bg-[#0A0A0A] text-[#FAFAFA] text-[9px] uppercase tracking-widest px-2 py-1 z-10">
             Sale
           </div>
         )}
+
         {!product.inStock && (
           <div className="absolute inset-0 bg-[#FAFAFA]/60 flex items-center justify-center z-10">
             <p className="text-xs uppercase tracking-widest text-[#737373]">Out of Stock</p>
           </div>
         )}
+
         {product.inStock && (
           <button
             onClick={handleQuickAdd}
@@ -72,6 +76,7 @@ export default function ProductCard({ product }: ProductCardProps) {
           </button>
         )}
       </div>
+
       <div className="mt-3 space-y-1">
         <p className="text-[10px] uppercase tracking-widest text-[#737373]">{product.category.name}</p>
         <p className="text-sm font-medium text-[#0A0A0A] leading-tight">{product.name}</p>

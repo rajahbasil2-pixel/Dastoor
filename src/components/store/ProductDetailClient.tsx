@@ -1,6 +1,5 @@
 "use client";
 import { useState } from "react";
-import Image from "next/image";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 import SizeSelector from "./SizeSelector";
@@ -18,6 +17,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
 
   const displayPrice = product.salePrice ?? product.price;
   const isOnSale = product.salePrice != null;
+  const images = product.images?.length > 0 ? product.images : ["/placeholder.jpg"];
 
   function handleAddToCart() {
     if (!selectedSize) { setSizeError(true); return; }
@@ -25,7 +25,7 @@ export default function ProductDetailClient({ product }: { product: any }) {
     addItem({
       productId: product.id,
       name: product.name,
-      image: product.images[0],
+      image: images[0],
       price: product.price,
       salePrice: product.salePrice,
       size: selectedSize,
@@ -47,27 +47,27 @@ export default function ProductDetailClient({ product }: { product: any }) {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-10 lg:gap-16">
         <div className="space-y-3">
           <div className="relative aspect-[4/5] bg-[#F5F5F5] overflow-hidden">
-            <Image
-              src={product.images[selectedImage] || "/hero.jpg"}
+            <img
+              src={images[selectedImage]}
               alt={product.name}
-              fill
-              className="object-cover"
-              sizes="(max-width: 1024px) 100vw, 50vw"
-              priority
+              className="w-full h-full object-cover"
+              onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
             />
             {isOnSale && (
               <div className="absolute top-4 left-4 bg-[#0A0A0A] text-[#FAFAFA] text-[9px] uppercase tracking-widest px-2 py-1">Sale</div>
             )}
           </div>
-          {product.images.length > 1 && (
+
+          {images.length > 1 && (
             <div className="flex gap-2 overflow-x-auto">
-              {product.images.map((img: string, i: number) => (
+              {images.map((img: string, i: number) => (
                 <button
                   key={i}
                   onClick={() => setSelectedImage(i)}
-                  className={`relative w-20 h-24 flex-shrink-0 bg-[#F5F5F5] overflow-hidden border-2 transition-all ${selectedImage === i ? "border-[#0A0A0A]" : "border-transparent"}`}
+                  className={`w-20 h-24 flex-shrink-0 bg-[#F5F5F5] overflow-hidden border-2 transition-all ${selectedImage === i ? "border-[#0A0A0A]" : "border-transparent"}`}
                 >
-                  <Image src={img} alt={`View ${i + 1}`} fill className="object-cover" sizes="80px" />
+                  <img src={img} alt={`View ${i + 1}`} className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }} />
                 </button>
               ))}
             </div>

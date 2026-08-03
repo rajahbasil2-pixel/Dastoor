@@ -66,7 +66,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         {order.items.map((item: any) => (
           <div key={item.id} className="flex items-center gap-4 px-5 py-4">
             <div className="relative w-14 h-16 bg-[#F5F5F5] flex-shrink-0">
-              {item.image && <Image src={item.image} alt={item.name} fill className="object-cover" sizes="56px" />}
+              {item.image && <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" sizes="56px" /> }
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">{item.name}</p>

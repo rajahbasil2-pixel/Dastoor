@@ -1,5 +1,4 @@
 "use client";
-import Image from "next/image";
 import Link from "next/link";
 import { X, Trash2, Plus, Minus } from "lucide-react";
 import { useCartStore } from "@/store/cartStore";
@@ -14,7 +13,7 @@ export default function CartDrawer() {
   return (
     <>
       {isOpen && (
-        <div className="fixed inset-0 z-40 cart-overlay" onClick={closeCart} />
+        <div className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm" onClick={closeCart} />
       )}
       <div
         className={`fixed top-0 right-0 bottom-0 z-50 w-full max-w-md bg-[#FAFAFA] flex flex-col transition-transform duration-400 ease-out ${
@@ -35,20 +34,20 @@ export default function CartDrawer() {
           {items.length === 0 ? (
             <div className="text-center py-16">
               <p className="text-sm text-[#737373] mb-6">Your cart is empty.</p>
-              <button
-                onClick={closeCart}
-                className="text-xs uppercase tracking-widest underline decoration-[#C8A96E] underline-offset-4"
-              >
+              <button onClick={closeCart} className="text-xs uppercase tracking-widest underline decoration-[#C8A96E] underline-offset-4">
                 Continue Shopping
               </button>
             </div>
           ) : (
             items.map((item) => (
               <div key={`${item.productId}-${item.size}`} className="flex gap-4">
-                <div className="relative w-20 h-24 bg-[#F5F5F5] flex-shrink-0">
-                  {item.image && (
-                    <Image src={item.image} alt={item.name} fill className="object-cover" sizes="80px" />
-                  )}
+                <div className="w-20 h-24 bg-[#F5F5F5] flex-shrink-0 overflow-hidden">
+                  <img
+                    src={item.image || "/placeholder.jpg"}
+                    alt={item.name}
+                    className="w-full h-full object-cover"
+                    onError={(e) => { (e.target as HTMLImageElement).src = "/placeholder.jpg"; }}
+                  />
                 </div>
                 <div className="flex-1 min-w-0">
                   <Link href={`/product/${item.slug}`} onClick={closeCart} className="text-sm font-medium text-[#0A0A0A] hover:text-[#C8A96E] transition-colors block truncate">
