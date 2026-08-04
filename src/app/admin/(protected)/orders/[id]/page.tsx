@@ -1,21 +1,22 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
 
 const STATUSES = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
 
-export default function OrderDetailPage({ params }: { params: { id: string } }) {
+export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params);
   const [order, setOrder] = useState<any>(null);
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    fetch(`/api/orders/${params.id}`).then(r => r.json()).then(setOrder);
-  }, [params.id]);
+    fetch(`/api/orders/${id}`).then(r => r.json()).then(setOrder);
+  }, [id]);
 
   async function updateStatus(status: string) {
     setSaving(true);
-    await fetch(`/api/orders/${params.id}`, {
+    await fetch(`/api/orders/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
@@ -66,7 +67,7 @@ export default function OrderDetailPage({ params }: { params: { id: string } }) 
         {order.items.map((item: any) => (
           <div key={item.id} className="flex items-center gap-4 px-5 py-4">
             <div className="relative w-14 h-16 bg-[#F5F5F5] flex-shrink-0">
-              {item.image && <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" sizes="56px" /> }
+              {item.image && <Image src={item.image} alt={item.name} fill unoptimized className="object-cover" sizes="56px" />}
             </div>
             <div className="flex-1">
               <p className="text-sm font-medium">{item.name}</p>
