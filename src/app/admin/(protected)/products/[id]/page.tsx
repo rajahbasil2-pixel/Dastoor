@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect, use } from "react";
+import { useState, useEffect, useRef, use } from "react";
 import { useRouter } from "next/navigation";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
@@ -13,10 +13,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   const [deleting, setDeleting] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [images, setImages] = useState<string[]>([]);
+  const imagesRef = useRef<string[]>([]);
   const [form, setForm] = useState({
     name: "", description: "", price: "", salePrice: "",
     categoryId: "", sizes: [] as string[], featured: false, inStock: true,
   });
+
+  // Keep ref in sync with state so handleSubmit always has latest images
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories);
@@ -26,7 +32,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
         salePrice: p.salePrice?.toString() || "", categoryId: p.categoryId,
         sizes: p.sizes.map((s: any) => s.size), featured: p.featured, inStock: p.inStock,
       });
-      setImages(p.images || []);
+      const imgs = p.images || [];
+      setImages(imgs);
+      imagesRef.current = imgs;
     });
   }, [id]);
 
@@ -37,6 +45,12 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   function toggleSize(size: string) {
     setForm({ ...form, sizes: form.sizes.includes(size) ? form.sizes.filter(s => s !== size) : [...form.sizes, size] });
+  }
+
+  function removeImage(index: number) {
+    const updated = imagesRef.current.filter((_, j) => j !== index);
+    imagesRef.current = updated;
+    setImages([...updated]);
   }
 
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -58,7 +72,9 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             });
             const data = await res.json();
             if (data.url) {
-              setImages(prev => [...prev, data.url]);
+              // Update ref immediately so submit always has latest
+              imagesRef.current = [...imagesRef.current, data.url];
+              setImages([...imagesRef.current]);
             } else {
               setUploadError("Upload failed: " + (data.error || "Unknown error"));
             }
@@ -75,13 +91,16 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   async function handleSubmit() {
     setLoading(true);
+    // Always use ref to get latest images at time of submit
+    const currentImages = imagesRef.current;
     const res = await fetch(`/api/products/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, images }),
+      body: JSON.stringify({ ...form, images: currentImages }),
     });
     if (res.ok) {
       router.push("/admin/products");
+      router.refresh();
     } else {
       const data = await res.json();
       alert("Error: " + data.error);
@@ -92,8 +111,14 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
   async function handleDelete() {
     if (!confirm("Delete this product? This cannot be undone.")) return;
     setDeleting(true);
-    await fetch(`/api/products/${id}`, { method: "DELETE" });
-    router.push("/admin/products");
+    const res = await fetch(`/api/products/${id}`, { method: "DELETE" });
+    if (res.ok) {
+      router.push("/admin/products");
+      router.refresh();
+    } else {
+      alert("Failed to delete product. Please try again.");
+      setDeleting(false);
+    }
   }
 
   return (
@@ -154,7 +179,8 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               {images.map((img, i) => (
                 <div key={i} className="relative w-20 h-24 bg-[#F5F5F5] group">
                   <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
-                  <button onClick={() => setImages(images.filter((_, j) => j !== i))}
+                  <button
+                    onClick={() => removeImage(i)}
                     className="absolute top-1 right-1 bg-[#EF4444] text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
                   </button>
