@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const revalidate = 0;
+
 const STATUS_COLORS: Record<string, string> = {
   PENDING: "bg-yellow-100 text-yellow-800",
   CONFIRMED: "bg-blue-100 text-blue-800",
@@ -21,7 +23,6 @@ export default async function AdminOrdersPage() {
         <h1 className="text-2xl font-bold">Orders</h1>
         <p className="text-xs text-[#737373] uppercase tracking-widest mt-1">{orders.length} total</p>
       </div>
-
       <div className="bg-white border border-[#D4D4D4] overflow-x-auto">
         <table className="w-full text-sm">
           <thead>

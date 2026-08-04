@@ -1,6 +1,8 @@
 import { prisma } from "@/lib/prisma";
 import Link from "next/link";
 
+export const revalidate = 0;
+
 export default async function AdminProductsPage() {
   const products = await prisma.product.findMany({
     include: { category: true },
@@ -33,11 +35,7 @@ export default async function AdminProductsPage() {
               <tr key={p.id} className="hover:bg-[#F5F5F5]">
                 <td className="px-4 py-3">
                   <div className="w-12 h-14 bg-[#F5F5F5] overflow-hidden">
-                    <img
-                      src={p.images[0] || "/placeholder.jpg"}
-                      alt={p.name}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={p.images[0] || "/placeholder.jpg"} alt={p.name} className="w-full h-full object-cover" />
                   </div>
                 </td>
                 <td className="px-4 py-3 font-medium">{p.name}</td>

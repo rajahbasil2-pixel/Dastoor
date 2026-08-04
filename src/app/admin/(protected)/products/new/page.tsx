@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 const SIZE_OPTIONS = ["XS", "S", "M", "L", "XL", "XXL", "XXXL", "28", "30", "32", "34", "36", "38", "40", "Free Size"];
@@ -10,12 +10,17 @@ export default function NewProductPage() {
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [images, setImages] = useState<string[]>([]);
+  const imagesRef = useRef<string[]>([]);
   const [uploadError, setUploadError] = useState("");
   const [form, setForm] = useState({
     name: "", description: "", price: "", salePrice: "",
     categoryId: "", sizes: [] as string[],
     featured: false, inStock: true,
   });
+
+  useEffect(() => {
+    imagesRef.current = images;
+  }, [images]);
 
   useEffect(() => {
     fetch("/api/categories").then(r => r.json()).then(setCategories);
@@ -30,12 +35,17 @@ export default function NewProductPage() {
     setForm({ ...form, sizes: form.sizes.includes(size) ? form.sizes.filter(s => s !== size) : [...form.sizes, size] });
   }
 
+  function removeImage(index: number) {
+    const updated = imagesRef.current.filter((_, j) => j !== index);
+    imagesRef.current = updated;
+    setImages([...updated]);
+  }
+
   async function handleImageUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const files = e.target.files;
     if (!files) return;
     setUploading(true);
     setUploadError("");
-
     for (const file of Array.from(files)) {
       const reader = new FileReader();
       await new Promise<void>((resolve) => {
@@ -49,11 +59,12 @@ export default function NewProductPage() {
             });
             const data = await res.json();
             if (data.url) {
-              setImages(prev => [...prev, data.url]);
+              imagesRef.current = [...imagesRef.current, data.url];
+              setImages([...imagesRef.current]);
             } else {
               setUploadError("Upload failed: " + (data.error || "Unknown error"));
             }
-          } catch (err) {
+          } catch {
             setUploadError("Upload failed. Check Cloudinary settings.");
           }
           resolve();
@@ -70,13 +81,15 @@ export default function NewProductPage() {
       return;
     }
     setLoading(true);
+    const currentImages = imagesRef.current;
     const res = await fetch("/api/products", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ ...form, images }),
+      body: JSON.stringify({ ...form, images: currentImages }),
     });
     if (res.ok) {
       router.push("/admin/products");
+      router.refresh();
     } else {
       const data = await res.json();
       alert("Error: " + data.error);
@@ -96,12 +109,10 @@ export default function NewProductPage() {
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Product Name *</label>
           <input name="name" value={form.name} onChange={handleChange} placeholder="Classic Oxford Shirt" className="w-full border border-[#D4D4D4] px-4 py-3 text-sm outline-none focus:border-[#0A0A0A]" />
         </div>
-
         <div>
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Description</label>
           <textarea name="description" value={form.description} onChange={handleChange} rows={3} placeholder="Product description..." className="w-full border border-[#D4D4D4] px-4 py-3 text-sm outline-none focus:border-[#0A0A0A] resize-none" />
         </div>
-
         <div className="grid grid-cols-2 gap-4">
           <div>
             <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Price (Rs.) *</label>
@@ -112,7 +123,6 @@ export default function NewProductPage() {
             <input name="salePrice" value={form.salePrice} onChange={handleChange} type="number" placeholder="Optional" className="w-full border border-[#D4D4D4] px-4 py-3 text-sm outline-none focus:border-[#0A0A0A]" />
           </div>
         </div>
-
         <div>
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">Category *</label>
           <select name="categoryId" value={form.categoryId} onChange={handleChange} className="w-full border border-[#D4D4D4] px-4 py-3 text-sm outline-none focus:border-[#0A0A0A] bg-white">
@@ -120,7 +130,6 @@ export default function NewProductPage() {
             {categories.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
           </select>
         </div>
-
         <div>
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-3">Sizes</label>
           <div className="flex flex-wrap gap-2">
@@ -132,7 +141,6 @@ export default function NewProductPage() {
             ))}
           </div>
         </div>
-
         <div>
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">
             Product Images {uploading && <span className="text-[#C8A96E] ml-2">Uploading...</span>}
@@ -144,7 +152,7 @@ export default function NewProductPage() {
               {images.map((img, i) => (
                 <div key={i} className="relative w-20 h-24 bg-[#F5F5F5] group">
                   <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
-                  <button onClick={() => setImages(images.filter((_, j) => j !== i))}
+                  <button onClick={() => removeImage(i)}
                     className="absolute top-1 right-1 bg-[#EF4444] text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
                   </button>
@@ -152,9 +160,8 @@ export default function NewProductPage() {
               ))}
             </div>
           )}
-          <p className="text-xs text-[#737373] mt-2">{images.length} image(s) uploaded to Cloudinary</p>
+          <p className="text-xs text-[#737373] mt-2">{images.length} image(s) uploaded</p>
         </div>
-
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} className="w-4 h-4" />
@@ -165,7 +172,6 @@ export default function NewProductPage() {
             <span className="text-xs uppercase tracking-widest text-[#737373]">In Stock</span>
           </label>
         </div>
-
         <button onClick={handleSubmit} disabled={loading || uploading}
           className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
           {loading ? "Saving..." : uploading ? "Wait for upload to finish..." : "Add Product"}

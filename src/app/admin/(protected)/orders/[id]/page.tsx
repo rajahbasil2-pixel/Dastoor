@@ -2,13 +2,16 @@
 import { useState, useEffect, use } from "react";
 import Image from "next/image";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 const STATUSES = ["PENDING", "CONFIRMED", "SHIPPED", "DELIVERED", "CANCELLED"];
 
 export default function OrderDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
+  const router = useRouter();
   const [order, setOrder] = useState<any>(null);
   const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
 
   useEffect(() => {
     fetch(`/api/orders/${id}`).then(r => r.json()).then(setOrder);
@@ -16,12 +19,18 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
 
   async function updateStatus(status: string) {
     setSaving(true);
-    await fetch(`/api/orders/${id}`, {
+    setSaved(false);
+    const res = await fetch(`/api/orders/${id}`, {
       method: "PUT",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ status }),
     });
-    setOrder({ ...order, status });
+    if (res.ok) {
+      setOrder({ ...order, status });
+      setSaved(true);
+      router.refresh();
+      setTimeout(() => setSaved(false), 2000);
+    }
     setSaving(false);
   }
 
@@ -36,7 +45,6 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         <h1 className="text-2xl font-bold">Order {order.orderNumber}</h1>
         <p className="text-xs text-[#737373] uppercase tracking-widest mt-1">{new Date(order.createdAt).toLocaleString("en-PK")}</p>
       </div>
-
       <div className="grid grid-cols-2 gap-4">
         <div className="bg-white border border-[#D4D4D4] p-5 space-y-3">
           <p className="text-xs uppercase tracking-widest text-[#737373]">Customer</p>
@@ -50,18 +58,14 @@ export default function OrderDetailPage({ params }: { params: Promise<{ id: stri
         </div>
         <div className="bg-white border border-[#D4D4D4] p-5 space-y-3">
           <p className="text-xs uppercase tracking-widest text-[#737373]">Order Status</p>
-          <select
-            value={order.status}
-            onChange={(e) => updateStatus(e.target.value)}
-            disabled={saving}
-            className="w-full border border-[#D4D4D4] px-3 py-2 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]"
-          >
+          <select value={order.status} onChange={(e) => updateStatus(e.target.value)} disabled={saving}
+            className="w-full border border-[#D4D4D4] px-3 py-2 text-sm bg-[#FAFAFA] outline-none focus:border-[#0A0A0A]">
             {STATUSES.map((s) => <option key={s} value={s}>{s}</option>)}
           </select>
           {saving && <p className="text-xs text-[#737373]">Updating...</p>}
+          {saved && <p className="text-xs text-green-600">✓ Status updated</p>}
         </div>
       </div>
-
       <div className="bg-white border border-[#D4D4D4] divide-y divide-[#F5F5F5]">
         <div className="px-5 py-3"><p className="text-xs uppercase tracking-widest text-[#737373]">Order Items</p></div>
         {order.items.map((item: any) => (

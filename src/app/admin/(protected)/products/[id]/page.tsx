@@ -19,7 +19,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     categoryId: "", sizes: [] as string[], featured: false, inStock: true,
   });
 
-  // Keep ref in sync with state so handleSubmit always has latest images
   useEffect(() => {
     imagesRef.current = images;
   }, [images]);
@@ -58,7 +57,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
     if (!files) return;
     setUploading(true);
     setUploadError("");
-
     for (const file of Array.from(files)) {
       const reader = new FileReader();
       await new Promise<void>((resolve) => {
@@ -72,7 +70,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             });
             const data = await res.json();
             if (data.url) {
-              // Update ref immediately so submit always has latest
               imagesRef.current = [...imagesRef.current, data.url];
               setImages([...imagesRef.current]);
             } else {
@@ -91,7 +88,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
 
   async function handleSubmit() {
     setLoading(true);
-    // Always use ref to get latest images at time of submit
     const currentImages = imagesRef.current;
     const res = await fetch(`/api/products/${id}`, {
       method: "PUT",
@@ -169,7 +165,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             ))}
           </div>
         </div>
-
         <div>
           <label className="block text-xs uppercase tracking-widest text-[#737373] mb-2">
             Images {uploading && <span className="text-[#C8A96E] ml-2">Uploading...</span>}
@@ -179,8 +174,7 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
               {images.map((img, i) => (
                 <div key={i} className="relative w-20 h-24 bg-[#F5F5F5] group">
                   <img src={img} alt={`Image ${i + 1}`} className="w-full h-full object-cover" />
-                  <button
-                    onClick={() => removeImage(i)}
+                  <button onClick={() => removeImage(i)}
                     className="absolute top-1 right-1 bg-[#EF4444] text-white text-xs w-5 h-5 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                     ×
                   </button>
@@ -192,7 +186,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
           {uploadError && <p className="text-xs text-[#EF4444] mt-2">{uploadError}</p>}
           <p className="text-xs text-[#737373] mt-2">{images.length} image(s) saved</p>
         </div>
-
         <div className="flex items-center gap-6">
           <label className="flex items-center gap-2 cursor-pointer">
             <input type="checkbox" name="featured" checked={form.featured} onChange={handleChange} className="w-4 h-4" />
@@ -203,7 +196,6 @@ export default function EditProductPage({ params }: { params: Promise<{ id: stri
             <span className="text-xs uppercase tracking-widest text-[#737373]">In Stock</span>
           </label>
         </div>
-
         <button onClick={handleSubmit} disabled={loading || uploading}
           className="w-full bg-[#0A0A0A] text-[#FAFAFA] py-4 text-xs uppercase tracking-widest hover:bg-[#404040] transition-colors disabled:opacity-50">
           {loading ? "Saving..." : uploading ? "Wait for upload..." : "Save Changes"}
